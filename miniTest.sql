@@ -1,4 +1,6 @@
+DROP DATABASE IF EXISTS StudentDB;
 CREATE DATABASE StudentDB;
+
 USE StudentDB;
 
 -- 1. Bảng Khoa
@@ -104,33 +106,34 @@ SELECT * FROM ViewStudentCountByDept
 WHERE TotalStudents = (SELECT MAX(TotalStudents) FROM ViewStudentCountByDept);
 
 DELIMITER //
-CREATE PROCEDURE GetTopScoreStudent (
-IN varCourseID VARCHAR(6))
+CREATE PROCEDURE GetTopScoreStudent (IN varCourseID VARCHAR(6))
 BEGIN
-SELECT s.student, s.FullName, e.Score
-FROM Student s 
-JOIN Enrollment e ON  e.StudentID = s.StudentID
-WHERE e.CourseID = varCourseID
-AND e.Score = (SELECT MAX(Score) FROM Enrollment WHERE e.CourseID = varCourseID);
+    SELECT s.StudentID, s.FullName, e.Score -- Đã sửa s.Student thành s.StudentID
+    FROM Student s 
+    JOIN Enrollment e ON e.StudentID = s.StudentID
+    WHERE e.CourseID = varCourseID
+    AND e.Score = (SELECT MAX(Score) FROM Enrollment WHERE CourseID = varCourseID);
 END //
 DELIMITER ;
-CALL GetTopScoreStudent(C00001);
-
-CREATE VIEW ViewITEnrollmentDB AS
+CALL GetTopScoreStudent("C102");
+-- database là C102
+CREATE OR REPLACE VIEW ViewITEnrollmentDB AS
 SELECT e.StudentID, e.CourseID, e.Score
 FROM Enrollment e 
-JOIN Student s ON s.SdudentID = e.StudentID
-WHERE s.DeptID ="IT" AND e.CourseID ="C00001"
+JOIN Student s ON s.StudentID = e.StudentID
+WHERE s.DeptID = 'IT' AND e.CourseID = 'CS102'
 WITH CHECK OPTION;
 
 DELIMITER //
-CREATE PROCEDURE UpdateScoreITDB (IN varStudentID VARCHAR(6),INOUT inoutNewScore DECIMAL(4,2) )
+CREATE PROCEDURE UpdateScoreITDB (
+    IN varStudentID VARCHAR(6),
+    INOUT inoutNewScore DECIMAL(4,2)
+)
 BEGIN
-IF inoutNewScore  > 10 THEN 
-SET inoutNewScore = 10;
-END IF ;
-
-UPDATE ViewITEnrollmentDB 
+    IF inoutNewScore > 10 THEN 
+	SET inoutNewScore = 10;
+    END IF;
+    UPDATE ViewITEnrollmentDB 
     SET Score = inoutNewScore
     WHERE StudentID = varStudentID;
 END //
